@@ -1,0 +1,23 @@
+public class ConvertLead {
+    @InvocableMethod
+    public static void convert(List<Lead> leads) {
+        List<Database.LeadConvert> leadConverts = new List<Database.LeadConvert>();
+        
+         for (Lead lead : leads) 
+         {
+            lead.Status = 'Closed - Converted';
+         }
+        update leads;
+        for (Lead lead : leads) {
+            Database.LeadConvert lc = new Database.LeadConvert();
+            lc.setConvertedStatus(Lead.Status);
+            lc.setLeadId(lead.Id);
+            lc.setDoNotCreateOpportunity(false);
+            
+            
+            leadConverts.add(lc);
+            
+        }
+        Database.convertLead(leadConverts);
+    }
+}
