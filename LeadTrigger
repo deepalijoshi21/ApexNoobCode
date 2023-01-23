@@ -1,0 +1,27 @@
+trigger LeadTrigger2 on Lead (before update) {
+    
+    try
+    {
+        Map<Id , Lead> ld_Map = new Map<Id , Lead>();
+    
+        for(Lead ld : Trigger.new)
+    {
+        if(Trigger.newMap.get(ld.id).email != Trigger.oldMap.get(ld.Id).email 
+           && Trigger.oldMap.get(ld.Id).email != null)
+        {
+            ld.LastName = ld.LastName + ' updated';
+            ld_Map.put(ld.Id, ld);
+        }       
+    }
+        System.debug('OLD MAAAAAAAAAAAAAAAP' + Trigger.oldMap);
+        System.debug('NEW MAAAAAAAAAAAAAAAP' + Trigger.newMap); 
+        System.debug('MY MAAAAAAAAAAAAAAAP' + ld_Map);        
+    }
+    
+    catch(Exception ex)
+    {
+        System.debug(ex.getMessage());
+    }
+    
+}
+    
