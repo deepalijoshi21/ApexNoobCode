@@ -1,0 +1,89 @@
+public class UploadImageFromAttachment2_Handler {
+    
+    public static void attachImage(List<ContentVersion> versionList)
+    {
+        String url = '';
+        Id DocumentId;
+        Id ContentVersionId;
+        List<ContentDistribution> distList = new List<ContentDistribution>();
+        for(ContentVersion cv : versionList)
+        {
+            url = cv.contentUrl;
+            DocumentId = cv.ContentDocumentId;
+            ContentVersionId = cv.Id;
+            
+            ContentDistribution newDist = new ContentDistribution();
+                newDist.ContentVersionId = cv.Id;
+                newDist.Name = 'External Link';
+                newDist.PreferencesNotifyOnVisit = false;
+                newDist.PreferencesAllowViewInBrowser = true;
+                newDist.PreferencesAllowOriginalDownload=true;
+                distList.add(newDist);           
+        }
+        insert distList;
+        
+        System.debug('Document Id===>' + DocumentId);
+         
+        System.debug('ContentDistribution ========>' + distList);
+        System.debug('URL ======>' + url);  //Not Getting URL from Content URL
+        
+		List<ContentDistribution> distributionsurl =[select id, DistributionPublicUrl from ContentDistribution where id=:distList[0].id];
+        
+        String Link; 
+        
+        for(ContentDistribution condis : distributionsurl )
+        {
+            Link = condis.DistributionPublicUrl;
+        }
+        
+         System.debug('Link ======>' + Link);  //Getting Link From Content Distribution
+        
+        
+        
+        List<contentDocumentLink> linkList = [SELECT Id, LinkedEntityId, ContentDocumentId 
+                                              FROM ContentDocumentLink 
+                                              WHERE ContentDocumentId = :DocumentId];
+        
+        System.debug('LinkedEntity===>' + linkList);
+        
+         String contentDocumentUrl =  system.URL.getSalesforceBaseUrl().toExternalForm() + '/sfc/servlet.shepherd/version/renditionDownload?rendition=THUMB720BY480&versionId=' + ContentVersionId;
+       // https://your-community-domain-url/sfc/servlet.shepherd/version/renditionDownload?rendition=THUMB720BY480&versionId=<ContentVersionId>
+        
+        System.debug('Content Document URL =====>' + contentDocumentUrl);
+        
+        List<Id> linkId = new List<Id>() ;
+        
+        String ContentDocumentLinkk;
+        
+        for(contentDocumentLink conLink : linkList)
+        {
+            linkId.add(conLink.LinkedEntityId);
+            ContentDocumentLinkk = conLink.Id;            
+        }
+        
+        System.debug('Content Document Link =====>' + ContentDocumentLinkk);
+        
+        if (linkId != null) {
+            List<Contact> conList = [SELECT Id, Name, Image_Link__c 
+                                     FROM Contact 
+                                     WHERE Id = :linkId];
+            System.debug('Contact===>' + conList);
+            List<Contact> contoUp = new List<Contact>();
+            
+            for(Contact con : conList)
+            {
+                con.Image_Link__c = contentDocumentUrl;
+                contoUp.add(con);
+            }
+            update contoUp;
+        }
+    }
+}
+
+-------------------------------------------------------------------------------Trigger-------------------------------------------------
+
+trigger UploadImageFromAttachment2 on ContentVersion (after insert) {
+    if(Trigger.IsInsert && Trigger.IsAfter){
+        UploadImageFromAttachment2_Handler.attachImage(Trigger.New);
+    } 
+}
