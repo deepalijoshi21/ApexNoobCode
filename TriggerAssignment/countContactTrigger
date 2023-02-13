@@ -1,0 +1,45 @@
+-----------------------------------------------------Handler---------------------------------------------------
+public class countContactTrigger_handler {
+    
+    public static void countContact(List<Contact> conLists)
+    {
+        List<Account> accList = new List<Account>();
+        List<Account> accUplist = new List<Account>();
+        try{
+            for (Contact con : conLists)  {
+                accList = [SELECT Id,Name,Number_of_Contacts__c 
+                           FROM Account WHERE Id =: con.AccountId];
+            }
+            
+            List<AggregateResult> results = [
+                SELECT  AccountId,
+                Count(Id)numAccounts FROM Contact 
+                Where AccountId IN:accList
+                GROUP BY AccountId
+            ];
+            
+            Integer NumRecords = (Integer)results[0].get('numAccounts');
+            
+            for (Account acc : accList)  {
+                acc.Number_of_Contacts__c = NumRecords ;
+                accUplist.add(acc);
+            }
+            if(!accUplist.isEmpty()){
+                update accUplist;
+            }
+            
+        }
+        catch(Exception ex){
+            system.debug('Error' +ex.getmessage());
+        }
+    }
+    
+}
+
+-------------------------------------------------------------------Trigger--------------------------------------
+
+ trigger countContactTrigger on Contact (after insert, after delete) {
+    
+    countContactTrigger_handler.countContact(Trigger.new);
+}
+
