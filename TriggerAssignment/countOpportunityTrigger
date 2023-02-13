@@ -1,0 +1,46 @@
+--------------------------------------------------Handler----------------------------------------
+public class countOpportunityTrigger_handler {
+    
+    public static void countOpportunity(List<Opportunity> oppLists)
+    {
+        List<Account> accList = new List<Account>();
+        List<Account> accUplist = new List<Account>();
+        try{
+            for (Opportunity opp : oppLists)  {
+                accList = [SELECT Id,Name,Number_of_Opportunities__c 
+                           FROM Account WHERE Id =: opp.AccountId];
+            }
+            
+            List<AggregateResult> results = [
+                SELECT  AccountId,
+                Count(Id)numAccounts FROM Opportunity 
+                Where AccountId IN:accList
+                GROUP BY AccountId
+            ];
+            
+            Integer NumRecords = (Integer)results[0].get('numAccounts');
+            
+            for (Account acc : accList)  {
+                acc.Number_of_Opportunities__c = NumRecords ;
+                accUplist.add(acc);
+            }
+            if(!accUplist.isEmpty()){
+                update accUplist;
+            }
+            
+        }
+        catch(Exception ex){
+            system.debug('Error' +ex.getmessage());
+        }
+    }
+    
+    
+    
+}
+
+------------------------------------------------------Trigger----------------------------------
+
+trigger countOpportunityTrigger on Opportunity (after insert, after delete) {
+    
+    countOpportunityTrigger_handler.countOpportunity(Trigger.new);
+}
