@@ -1,0 +1,23 @@
+---------------------------------------------------------Handler-----------------------------------------------
+public class testAccTrigger_handler {
+
+  public static void updateCity(List<Account> accList , Map<Id , Account> accOldMap)
+
+  {
+      List<Opportunity> oppCityUpdate = new List<Opportunity>();
+
+      Map<Id , Account> accMap = new Map<Id , Account>();
+
+      for(Account acc : accList)      
+      {
+          if(acc.City__c != accOldMap.get(acc.Id).City__c)
+          {
+              accMap.put(acc.Id, acc);
+          }       
+      }
+ -----------------------------------------------------------Trigger----------------------------------------------
+        
+ trigger testAccTrigger on Account (after update) {
+
+   testAccTrigger_handler.updateCity(Trigger.new , Trigger.oldmap);
+}
