@@ -5,17 +5,25 @@ public class deleteChildRecords_handler {
     public static void deleteChild(List<Account> accList)
     {
         List<Id> accId = new List<Id>();
-        for(Account acc : accList)
-        {
-            accId.add(acc.Id);
-            
+        try{
+            for(Account acc : accList)
+            {
+                accId.add(acc.Id);
+
+            }
+
+            List<Contact> accCons = [Select Id , AccountId , Name From Contact Where AccountId In :accId];
+            List<Opportunity> accOpps = [Select Id , AccountId , Name From Opportunity Where AccountId In :accId];
+            if(!accCons.isEmpty()){
+                delete accCons;
+            }
+            if(!accOpps.isEmpty()){
+                delete accOpps;
+            }
         }
-        
-        List<Contact> accCons = [Select Id , AccountId , Name From Contact Where AccountId In :accId];
-        List<Opportunity> accOpps = [Select Id , AccountId , Name From Opportunity Where AccountId In :accId];
-        
-        delete accCons;
-        delete accOpps;
+        catch(Exception ex){
+            system.debug('Error occur ==' +ex.getmessage());
+        }
         
     }
     
