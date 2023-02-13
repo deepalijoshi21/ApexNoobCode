@@ -1,0 +1,28 @@
+---------------------------------------------------------Handler------------------------------------
+public class testOppTrigger_handler {
+    
+    public static void checkAmount(List<Opportunity> oppList)
+    {
+        if(!oppList.isEmpty()){
+            for(Opportunity opp : oppList)
+            {
+                if(opp.Amount > 100000 && opp.AccountId != null)
+                {
+                    opp.addError('Amount can not exceed 100000');
+                }
+            }
+            
+        }
+        
+    }
+    
+}
+
+---------------------------------------------------------Trigger---------------------------------------
+trigger testOppTrigger on Opportunity (before insert) {
+    
+    testOppTrigger_handler.checkAmount(Trigger.new);
+    
+}
+
+
