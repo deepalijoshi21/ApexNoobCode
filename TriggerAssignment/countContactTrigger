@@ -39,7 +39,11 @@ public class countContactTrigger_handler {
 -------------------------------------------------------------------Trigger--------------------------------------
 
  trigger countContactTrigger on Contact (after insert, after delete) {
-    
-    countContactTrigger_handler.countContact(Trigger.new);
+    if(trigger.isafter && trigger.isinsert){
+        countContactTrigger_handler.countContact(Trigger.new);
+    }
+    if(trigger.isafter && trigger.isdelete){
+        countContactTrigger_handler.countContact(Trigger.new);
+    }
 }
 
