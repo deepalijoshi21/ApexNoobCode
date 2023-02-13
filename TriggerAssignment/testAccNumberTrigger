@@ -5,16 +5,20 @@ public class testAccNumberTrigger_handler {
     public static void saveOldNumber(List<Account> accLists , Map<Id,Account> accOldMap)
     {
         List<Account> accList = new List<Account>();
-        
-        for(Account acc : accLists)
-        {
-            if(acc.Phone != accOldMap.get(acc.id).Phone)
+        try{
+            for(Account acc : accLists)
             {
-                acc.Old_Contact_Number__c = accOldMap.get(acc.Id).Phone; 
+                if(acc.Phone != accOldMap.get(acc.id).Phone)
+                {
+                    acc.Old_Contact_Number__c = accOldMap.get(acc.Id).Phone; 
+                }
+                if(!accList.isEmpty()){
+                    accList.add(acc);
+                }
             }
-            
-            accList.add(acc);
-            
+        }
+        catch(Exception ex){
+            system.debug('Error Occur =' +ex.getmessage());
         }
     }
     
