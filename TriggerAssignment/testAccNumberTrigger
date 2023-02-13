@@ -1,0 +1,29 @@
+----------------------------------------------------------Handler-----------------------------
+
+public class testAccNumberTrigger_handler {
+    
+    public static void saveOldNumber(List<Account> accLists , Map<Id,Account> accOldMap)
+    {
+        List<Account> accList = new List<Account>();
+        
+        for(Account acc : accLists)
+        {
+            if(acc.Phone != accOldMap.get(acc.id).Phone)
+            {
+                acc.Old_Contact_Number__c = accOldMap.get(acc.Id).Phone; 
+            }
+            
+            accList.add(acc);
+            
+        }
+    }
+    
+}
+
+------------------------------------------------------Trigger-----------------------------------
+
+ trigger testAccNumberTrigger on Account (before update) {
+    
+   testAccNumberTrigger_handler.saveOldNumber(Trigger.new , Trigger.oldmap);
+
+}
