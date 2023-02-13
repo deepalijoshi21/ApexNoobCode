@@ -15,6 +15,28 @@ public class testAccTrigger_handler {
               accMap.put(acc.Id, acc);
           }       
       }
+
+      if(!accMap.isEmpty())
+      {
+          Set<Id> accIds = accMap.keySet();
+
+          List<Opportunity> oppups = [Select Id , AccountId From Opportunity Where AccountId =:accIds];
+
+          if(!oppups.isEmpty())
+          {
+              for(Opportunity opp : oppups)                
+              {
+                  opp.City__c = accMap.get(opp.AccountId).City__c;
+                  oppCityUpdate.add(opp);                
+              }
+              update oppCityUpdate;
+          }
+      }
+
+  }
+
+}
+
  -----------------------------------------------------------Trigger----------------------------------------------
         
  trigger testAccTrigger on Account (after update) {
