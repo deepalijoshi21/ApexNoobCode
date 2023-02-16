@@ -1,0 +1,57 @@
+public class leadScoreCustomTrigger_Handler {
+    
+    public static void putScore(List<Lead> leadList)
+    {
+        List<LeadScoreNew__c> leadScoreList = LeadScoreNew__c.getall().values();
+        
+        Map<String, Decimal> nationalityMap = new Map<String, Decimal>();
+        Map<String, Decimal> budgetMap = new Map<String, Decimal>();
+        Map<String, Decimal> dateMap = new Map<String, Decimal>();
+        
+        for(LeadScoreNew__c score : leadScoreList) {
+            if(score.Nationality__c != null && score.Nationality_Score__c != null) {
+                nationalityMap.put(score.Nationality__c, score.Nationality_Score__c);
+            }
+            
+            if(score.Budget__c != null && score.Budget_Score__c != null) {
+                budgetMap.put(score.Budget__c, score.Budget_Score__c);
+            }
+            
+            if(score.Starting_Date__c != null && score.Starting_Score__c != null) {
+                dateMap.put(score.Starting_Date__c, score.Starting_Score__c);
+            }
+        }
+        
+        for (Lead lead : leadList) {
+            Decimal totalScore = 0;
+            String nationality = lead.Nationality__c;
+            String budget = lead.Budget__c;
+            String startDate = lead.Starting_Date__c;
+            
+            if(nationality != null && nationalityMap.containsKey(nationality)) {
+                totalScore += nationalityMap.get(nationality) * 0.4;
+            }
+            
+            if(budget != null && budgetMap.containsKey(budget)) {
+                totalScore += budgetMap.get(budget) * 0.35;
+            }
+            
+            if(startDate != null && dateMap.containsKey(startDate)) {
+                totalScore += dateMap.get(startDate) * 0.25;
+            }
+            
+            lead.Custom_Score__c = totalScore;
+            
+        }
+        
+        
+    }
+}
+
+-------------------------------------------------------------------Trigger----------------------------------------------
+
+trigger leadScoreCustomTrigger on Lead (before insert, before update) {
+    
+   leadScoreCustomTrigger_Handler.putScore(Trigger.new);
+}
+
