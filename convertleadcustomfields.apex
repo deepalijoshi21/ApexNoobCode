@@ -63,9 +63,17 @@ public class convertcheck_handler {
         
    -----------------------------------------------------------------------Trigger-----------------------------------------------------
    
-   trigger converetcheck on Lead (after update) {
+trigger leadScoreCustomTrigger on Lead (before insert, before update) {
     
-    convertcheck_handler.ldConvert(Trigger.new);
-
+    if(Trigger.isBefore && Trigger.isInsert)
+    {
+        leadScoreCustomTrigger_Handler.putScore(Trigger.new);
+    }
+    
+    if(Trigger.isBefore && Trigger.isUpdate && Trigger.oldMap != Trigger.newMAp)
+    {
+        leadScoreCustomTrigger_Handler.putScore(Trigger.new);
+    }
+      
 }
   
