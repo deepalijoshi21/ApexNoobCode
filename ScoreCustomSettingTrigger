@@ -52,15 +52,32 @@ public class leadScoreCustomTrigger_Handler {
 
 trigger leadScoreCustomTrigger on Lead (before insert, before update) {
     
-    if(Trigger.isBefore && Trigger.isInsert)
-    {
+    if(Trigger.isBefore && Trigger.isInsert) {
         leadScoreCustomTrigger_Handler.putScore(Trigger.new);
     }
     
-    if(Trigger.isBefore && Trigger.isUpdate && Trigger.oldMap != Trigger.newMAp)
-    {
-        leadScoreCustomTrigger_Handler.putScore(Trigger.new);
+    if(Trigger.isBefore && Trigger.isUpdate) {
+        boolean isNationalityFieldUpdated = false;
+        boolean isBudgetFieldUpdated = false;
+        boolean isStartingDateFieldUpdated = false;
+        
+        for(Lead lead : Trigger.new) {
+            Lead oldLead = Trigger.oldMap.get(lead.Id);
+            if(oldLead.Nationality__c != lead.Nationality__c) {
+                isNationalityFieldUpdated = true;
+            }
+            if(oldLead.Budget__c != lead.Budget__c) {
+                isBudgetFieldUpdated = true;
+            }
+            if(oldLead.Starting_Date__c != lead.Starting_Date__c) {
+                isStartingDateFieldUpdated = true;
+            }
+        }
+        
+        if(isNationalityFieldUpdated || isBudgetFieldUpdated || isStartingDateFieldUpdated) {
+            leadScoreCustomTrigger_Handler.putScore(Trigger.new);
+        }
     }
-      
 }
+
 
