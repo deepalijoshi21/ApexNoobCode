@@ -1,0 +1,179 @@
+public class ContactTriggerHandler {
+    
+    // Trigger 1: Create Event in Contact with Ticket Information
+    public static void createEvent(List<Ticket__c> ticketinfo){
+        
+        String triggerticketId = '';
+        
+        for(Ticket__c ticketTrig :ticketinfo){
+            System.debug('Tigger info' + ticketTrig );
+            triggerticketId = ticketTrig.Id;	            
+        }
+        
+        List<Ticket__c> ticketContactandConcert = [SELECT Id, Name, Customer__c,Customer__r.Name, Customer__r.Description,
+                                                   Concert__r.Name, Concert__r.Venue__c, Concert__r.Date__c
+                                                   FROM Ticket__c Where Id =:triggerticketId];
+        
+        List<Contact> contactsToUpdate = new List<Contact>();
+        
+        List<Id> contactIds = new List<Id>();
+        String contactName;
+        String concertName;
+        String concertVenue;
+        Datetime concertDate;
+        Id contact;
+        
+        for(Ticket__c ticket : ticketContactandConcert ){
+            
+            contactName = ticket.Customer__r.Name;
+            concertName = ticket.Concert__r.Name;
+            concertVenue = ticket.Concert__r.Venue__c;
+            concertDate = ticket.Concert__r.Date__c;
+            contact = ticket.Customer__c;
+        }
+        
+        
+        
+        for(Contact con : contactsToUpdate) {
+            contactIds.add(con.Id);
+        }
+        
+        Map<Id, List<Event>> contactEvents = new Map<Id, List<Event>>();
+        
+        for(Event ev : [SELECT WhoId , Description FROM Event WHERE WhoId IN :contactIds]) {
+            if(contactEvents.containsKey(ev.WhoId)) {
+                List<Event> eventId = contactEvents.get(ev.WhoId);
+                eventId.add(ev);
+                contactEvents.put(ev.WhoId, eventId);
+            }
+            else {
+                contactEvents.put(ev.WhoId, new List<Event> {ev});
+            }
+        }
+        
+        // Create and update events
+        List<Event> cEventUpdate = new List<Event>();
+        Event newEvent = new Event();
+        newEvent.Subject = 'Concert Ticket';
+        newEvent.StartDateTime = concertDate;
+        newEvent.Location = concertVenue;
+        newEvent.EndDateTime = concertDate.addHours(2);
+        newEvent.WhoId = contact;
+        newEvent.ActivityDateTime = concertDate;
+        newEvent.Description = 'Hi, ' + contactName + '\n\nGreetings!\n\n' + concertName + ' at ' + concertVenue + ' on ' + concertDate.format() + '\n\nPlease visit!';
+        cEventUpdate.add(newEvent);
+        
+        insert cEventUpdate;
+        
+        
+        System.debug('Contact Name: ' + contactName);
+        System.debug('Concert Name: ' + concertName);
+        
+        
+        update contactsToUpdate;
+    }
+    
+    // Trigger 2: Update Event Description on Contact Name Change
+    public static void updateEventDetails(List<Contact> contacts) {
+        Set<Id> contactIds = new Set<Id>();
+        
+        for (Contact contact : contacts) {
+            if (contact.RecordType.Name != 'Artist') {
+                contactIds.add(contact.Id);
+            }
+        }
+        
+        List<Event> eventsToUpdate = [SELECT Id, WhoId, Who.Name, Description, Subject, Location, StartDateTime FROM Event WHERE WhoId IN :contactIds];
+        
+        for (Event eventToUpdate : eventsToUpdate) {
+            String contactName = eventToUpdate.Who.Name;
+            eventToUpdate.Description = 'Hi, ' + contactName + '\n\nGreetings!\n\n' + eventToUpdate.Subject + ' at ' + eventToUpdate.Location + ' on ' + eventToUpdate.StartDateTime.format() + '\n\nPlease visit!';
+        }
+        
+        update eventsToUpdate;
+    }
+    
+    // Trigger 3: Update Event Description on Concert Venue Change
+    public static void updateEventOnConcert(List<Concert__c> concerts, Map<Id, Concert__c> oldConcerts) {
+        Set<Id> concertIds = new Set<Id>();
+        for (Concert__c concert : concerts) {
+            if (oldConcerts.containsKey(concert.Id) && (oldConcerts.get(concert.Id).Venue__c != concert.Venue__c || oldConcerts.get(concert.Id).Date__c != concert.Date__c)) {
+                concertIds.add(concert.Id);
+            }
+        }
+        System.debug('concertIds: ' + concertIds);
+        
+        List<Ticket__c> tickets = [SELECT Id, Customer__c, Concert__c FROM Ticket__c WHERE Concert__c IN :concertIds];
+        Map<Id, Concert__c> concertMap = new Map<Id, Concert__c>(concerts);
+        Map<Id, Event> eventsToUpdateMap = new Map<Id, Event>();
+        
+        for (Ticket__c ticket : tickets) {
+            Concert__c concert = concertMap.get(ticket.Concert__c);
+            Concert__c oldConcert = oldConcerts.get(ticket.Concert__c);
+            List<Event> customerEvents = [SELECT Id, WhoId, Who.Name, Description, Subject, Location, StartDateTime FROM Event WHERE WhoId = :ticket.Customer__c];
+            
+            for (Event eventToUpdate : customerEvents) {
+                System.debug('eventToUpdate: ' + eventToUpdate);
+                
+                
+                eventToUpdate.Description = 'Hi, ' + eventToUpdate.Who.Name + '\n\nGreetings!\n\n' + concert.Name + ' at ' + concert.Venue__c + ' on ' + concert.Date__c.format() + '\n\nPlease visit!';
+                eventsToUpdateMap.put(eventToUpdate.Id, eventToUpdate);
+                
+            }
+        }
+        
+        if (!eventsToUpdateMap.isEmpty()) {
+            List<Event> eventsToUpdateList = new List<Event>(eventsToUpdateMap.values());
+            try {
+                update eventsToUpdateList;
+                System.debug('eventsToUpdateList: ' + eventsToUpdateList);
+            } catch (Exception e) {
+                System.debug('Error updating events: ' + e.getMessage());
+            }
+        } else {
+            System.debug('eventsToUpdateMap is empty');
+        }
+    }
+    
+    //Trigger 3(Update):
+    public static void updateEventConcert(Map<Id, Concert__c> concertMap){
+        
+        Map<Id, Set<String>> customerTicketsMap = new Map<Id, Set<String>>();
+        Map<Id, Concert__c> ticketConcertMap = new Map<Id, Concert__c>();
+        Map<Id, Event> eventUpdateMap = new Map<Id, Event>();
+        
+        // GET ALL CUSTOMER RELATED TO CONCERTS TICKETS
+        for(Ticket__c tkt : [SELECT Id, Customer__c, Concert__c , Concert__r.Name, Concert__r.Venue__c, Concert__r.Date__c FROM Ticket__c WHERE Concert__c IN :concertMap.keyset()]){
+            
+            // TICKET Vs CONCERT MAP
+            ticketConcertMap.put(tkt.Id, concertMap.get(tkt.Concert__c));
+            
+            // CUSTOMER Vs TICKET MAP
+            if(customerTicketsMap.containsKey(tkt.Customer__c)){
+                customerTicketsMap.get(tkt.Customer__c).add(tkt.Id);
+            } else {
+                Set<String> ticketIds = new Set<String>{tkt.Id};
+                    customerTicketsMap.put(tkt.Customer__c, ticketIds);
+            }
+        }
+        
+        // GET EVENTS RELATED TO CUSTOMERS WITH CONCERT TICKETS
+        List<Event> eventsToUpdate = [SELECT Id, WhoId, Who.Name, Description, Subject, Location, StartDateTime FROM Event WHERE WhoId IN :customerTicketsMap.keySet() AND Subject Like '%Concert%'];
+        
+        // UPDATE EVENT DESCRIPTION WITH CONCERT DETAILS
+        for(Event ev : eventsToUpdate){            
+            Id customerId = ev.WhoId;            
+            for(String tktId : customerTicketsMap.get(customerId)){               
+                Concert__c concert = ticketConcertMap.get(tktId);                
+                if(concert != null){
+                    ev.Description = 'Hi, ' + ev.Who.Name + '\n\nGreetings!\n\n' + concert.Name + ' at ' + concert.Venue__c + ' on ' + concert.Date__c.format() + '\n\nPlease visit!';
+                    eventUpdateMap.put(ev.Id, ev);
+                }
+            }
+        }         
+        // UPDATE EVENTS
+        List<Event> eventsToUpdateList = new List<Event>(eventUpdateMap.values());
+        update eventsToUpdateList;
+    }
+    
+}
