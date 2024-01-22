@@ -1,6 +1,6 @@
 public class AddQuoteLineItemInOpp {
     public static Id createProduct(String Name, Boolean IsActive) {
-        
+        //Add product under quote
         Product2 pro = new Product2();
         pro.Name = Name;
         pro.IsActive = IsActive;
